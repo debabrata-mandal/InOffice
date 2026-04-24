@@ -17,3 +17,5 @@ captures
 
 # Release keystore (CI writes this from secrets; never commit)
 app/release.keystore
+# Local keystore files (never commit)
+*.jks
