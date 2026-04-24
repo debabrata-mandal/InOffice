@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#1B5E20</color>
+    <!-- Deep institutional blue; pairs with white foreground on home screen / app drawer -->
+    <color name="ic_launcher_background">#152C52</color>
 </resources>

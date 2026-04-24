@@ -4,7 +4,14 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Arched tower: white mass; horizontal bands cut through so background reads as glazing -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M54,28 L54,28 C42,28 32,38 32,50 L32,62 C32,74 42,84 54,84 C66,84 76,74 76,62 L76,50 C76,38 66,28 54,28 Z M48,46 L60,46 L60,58 L48,58 Z" />
+        android:fillType="evenOdd"
+        android:pathData="M38,88L38,44Q54,28,70,44L70,88ZM42,52L66,52L66,57L42,57ZM42,62L66,62L66,67L42,67ZM42,72L66,72L66,77L42,77Z" />
+    <!-- Ground line: anchors the mark in the adaptive safe zone -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.9"
+        android:pathData="M32,89h44v2.5h-44z" />
 </vector>
