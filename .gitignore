@@ -2,6 +2,7 @@
 .gradle
 /local.properties
 /.idea/
+**/.vs/
 .DS_Store
 /build
 **/build/
@@ -13,3 +14,6 @@ captures
 *.ap_
 *.dex
 *.class
+
+# Release keystore (CI writes this from secrets; never commit)
+app/release.keystore

@@ -19,6 +19,26 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // CI: decode RELEASE_KEYSTORE_BASE64 to app/release.keystore and set KEYSTORE_PASSWORD,
+    // KEY_PASSWORD, KEY_ALIAS in the workflow. Locally, omit the file to sign release with debug keys.
+    signingConfigs {
+        create("release") {
+            val releaseKeystore = file("release.keystore")
+            if (releaseKeystore.exists()) {
+                storeFile = releaseKeystore
+                storePassword = System.getenv("KEYSTORE_PASSWORD").orEmpty()
+                keyAlias = System.getenv("KEY_ALIAS").orEmpty()
+                keyPassword = System.getenv("KEY_PASSWORD").orEmpty()
+            } else {
+                val debugKeystore = file("${System.getProperty("user.home")}/.android/debug.keystore")
+                storeFile = debugKeystore
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -26,6 +46,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
