@@ -6,6 +6,8 @@ import com.inoffice.app.core.data.local.toDomain
 import com.inoffice.app.core.domain.DayEntry
 import com.inoffice.app.core.domain.DayEntryRepository
 import com.inoffice.app.core.domain.DayType
+import com.inoffice.app.core.sync.SyncDeletionStore
+import com.inoffice.app.core.sync.SyncTrigger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
@@ -17,6 +19,8 @@ import javax.inject.Singleton
 @Singleton
 class RoomDayEntryRepository @Inject constructor(
     private val dao: DayEntryDao,
+    private val deletionStore: SyncDeletionStore,
+    private val syncTrigger: SyncTrigger,
 ) : DayEntryRepository {
 
     override fun observeEntries(yearMonth: YearMonth): Flow<List<DayEntry>> {
@@ -32,10 +36,14 @@ class RoomDayEntryRepository @Inject constructor(
 
     override suspend fun setDayType(localDate: LocalDate, type: DayType) {
         val key = localDate.toString()
+        val now = System.currentTimeMillis()
         if (type == DayType.NONE) {
             dao.deleteByDate(key)
+            deletionStore.markDeleted(localDate = key, updatedAtEpochMillis = now)
+            syncTrigger.onLocalDataChanged()
             return
         }
+        deletionStore.clearDeleted(key)
         val existing = dao.getByDate(key)
         val id = existing?.id ?: UUID.randomUUID().toString()
         dao.upsert(
@@ -43,8 +51,9 @@ class RoomDayEntryRepository @Inject constructor(
                 localDate = key,
                 id = id,
                 type = type.name,
-                updatedAtEpochMillis = System.currentTimeMillis(),
+                updatedAtEpochMillis = now,
             ),
         )
+        syncTrigger.onLocalDataChanged()
     }
 }
