@@ -10,10 +10,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -31,14 +33,20 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.inoffice.app.R
+import com.inoffice.app.core.sync.SyncState
+import java.text.DateFormat
+import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsRoute(
     onBack: () -> Unit,
+    signedInEmail: String?,
+    onSignOut: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val mandate by viewModel.baseMandate.collectAsStateWithLifecycle()
+    val syncStatus by viewModel.syncStatus.collectAsStateWithLifecycle()
     var draft by remember { mutableStateOf(mandate.toString()) }
     LaunchedEffect(mandate) {
         draft = mandate.toString()
@@ -81,11 +89,61 @@ fun SettingsRoute(
             ) {
                 Text(stringResource(R.string.settings_save))
             }
+            Button(
+                onClick = { viewModel.syncNow() },
+                enabled = syncStatus.state != SyncState.SYNCING,
+                colors = ButtonDefaults.buttonColors(),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    when (syncStatus.state) {
+                        SyncState.QUEUED -> stringResource(R.string.settings_sync_queued)
+                        SyncState.SYNCING -> stringResource(R.string.settings_sync_in_progress)
+                        else -> stringResource(R.string.settings_sync_now)
+                    },
+                )
+            }
             Text(
-                text = stringResource(R.string.settings_sync_placeholder),
+                text =
+                    when (syncStatus.state) {
+                        SyncState.QUEUED -> stringResource(R.string.settings_sync_status_queued)
+                        SyncState.SYNCING -> stringResource(R.string.settings_sync_status_syncing)
+                        SyncState.ERROR -> syncStatus.errorMessage ?: stringResource(R.string.settings_sync_status_error)
+                        SyncState.IDLE -> {
+                            val at = syncStatus.lastSuccessAtEpochMillis
+                            if (at != null) {
+                                val formatted = DateFormat.getDateTimeInstance().format(Date(at))
+                                stringResource(R.string.settings_sync_status_success, formatted)
+                            } else {
+                                stringResource(R.string.settings_sync_status_idle)
+                            }
+                        }
+                    },
+                style = MaterialTheme.typography.bodyMedium,
+                color =
+                    if (syncStatus.state == SyncState.ERROR) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text =
+                    if (signedInEmail.isNullOrBlank()) {
+                        stringResource(R.string.settings_account_unknown)
+                    } else {
+                        stringResource(R.string.settings_signed_in_as, signedInEmail)
+                    },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            OutlinedButton(
+                onClick = onSignOut,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.settings_sign_out))
+            }
         }
     }
 }

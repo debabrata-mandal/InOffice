@@ -18,6 +18,8 @@ object Routes {
 @Composable
 fun InOfficeNavHost(
     navController: NavHostController,
+    signedInEmail: String?,
+    onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     NavHost(
@@ -35,7 +37,11 @@ fun InOfficeNavHost(
             ReportRoute(onBack = { navController.popBackStack() })
         }
         composable(Routes.Settings) {
-            SettingsRoute(onBack = { navController.popBackStack() })
+            SettingsRoute(
+                onBack = { navController.popBackStack() },
+                signedInEmail = signedInEmail,
+                onSignOut = onSignOut,
+            )
         }
     }
 }
