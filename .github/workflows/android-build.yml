@@ -61,13 +61,28 @@ jobs:
           commit_msg=$(echo "${{ github.event.head_commit.message }}" | head -n1 | tr -d '\n\r')
           echo "Commit message: $commit_msg"
 
-          if [[ $commit_msg =~ ^(feat|feature)(\(.+\))?: ]]; then
+          if [[ $commit_msg =~ ^(feat|feature)!(\(.+\))?: ]]; then
+            echo "Major version bump (breaking feature)"
+            major=$((major + 1))
+            minor=0
+            patch=0
+          elif [[ $commit_msg =~ ^(feat|feature)(\(.+\))?: ]]; then
             echo "Minor version bump (feature)"
             minor=$((minor + 1))
+            patch=0
+          elif [[ $commit_msg =~ ^(fix|bugfix|hotfix)!(\(.+\))?: ]]; then
+            echo "Major version bump (breaking fix)"
+            major=$((major + 1))
+            minor=0
             patch=0
           elif [[ $commit_msg =~ ^(fix|bugfix|hotfix)(\(.+\))?: ]]; then
             echo "Patch version bump (fix)"
             patch=$((patch + 1))
+          elif [[ $commit_msg =~ ^(chore|docs|style|refactor|perf|test)!(\(.+\))?: ]]; then
+            echo "Major version bump (breaking chore)"
+            major=$((major + 1))
+            minor=0
+            patch=0
           elif [[ $commit_msg =~ ^(chore|docs|style|refactor|perf|test)(\(.+\))?: ]]; then
             echo "Build number bump (chore)"
             patch=$((patch + 1))
@@ -156,11 +171,23 @@ jobs:
           commit_msg=$(echo "${{ github.event.head_commit.message }}" | head -n1 | tr -d '\n\r')
           echo "Commit message: $commit_msg"
 
-          if [[ $commit_msg =~ ^(feat|feature)(\(.+\))?: ]]; then
+          if [[ $commit_msg =~ ^(feat|feature)!(\(.+\))?: ]]; then
+            major=$((major + 1))
+            minor=0
+            patch=0
+          elif [[ $commit_msg =~ ^(feat|feature)(\(.+\))?: ]]; then
             minor=$((minor + 1))
+            patch=0
+          elif [[ $commit_msg =~ ^(fix|bugfix|hotfix)!(\(.+\))?: ]]; then
+            major=$((major + 1))
+            minor=0
             patch=0
           elif [[ $commit_msg =~ ^(fix|bugfix|hotfix)(\(.+\))?: ]]; then
             patch=$((patch + 1))
+          elif [[ $commit_msg =~ ^(chore|docs|style|refactor|perf|test)!(\(.+\))?: ]]; then
+            major=$((major + 1))
+            minor=0
+            patch=0
           elif [[ $commit_msg =~ ^(chore|docs|style|refactor|perf|test)(\(.+\))?: ]]; then
             patch=$((patch + 1))
           elif [[ $commit_msg =~ ^(BREAKING CHANGE|!): ]]; then

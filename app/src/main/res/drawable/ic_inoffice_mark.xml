@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Matches launcher foreground: office tower silhouette -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M38,88L38,44Q54,28,70,44L70,88ZM42,52L66,52L66,57L42,57ZM42,62L66,62L66,67L42,67ZM42,72L66,72L66,77L42,77Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillAlpha="0.9"
+        android:pathData="M32,89h44v2.5h-44z" />
+</vector>

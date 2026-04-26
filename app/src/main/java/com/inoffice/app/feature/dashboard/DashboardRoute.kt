@@ -21,13 +21,19 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.inoffice.app.R
 import com.inoffice.app.core.domain.DayType
 import java.time.format.DateTimeFormatter
@@ -41,7 +47,12 @@ fun DashboardRoute(
     onOpenSettings: () -> Unit,
     viewModel: DashboardViewModel = hiltViewModel(),
 ) {
+    val context = LocalContext.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var greetingName by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        greetingName = greetingDisplayName(GoogleSignIn.getLastSignedInAccount(context))
+    }
     val monthTitle =
         remember(state.yearMonth) {
             state.yearMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault()))
@@ -70,6 +81,16 @@ fun DashboardRoute(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Spacer(modifier = Modifier.height(8.dp))
+            val firstName = greetingName
+            Text(
+                text =
+                    if (firstName.isNullOrBlank()) {
+                        stringResource(R.string.dashboard_greeting_fallback)
+                    } else {
+                        stringResource(R.string.dashboard_greeting, firstName)
+                    },
+                style = MaterialTheme.typography.titleLarge,
+            )
             Text(
                 text = monthTitle,
                 style = MaterialTheme.typography.titleMedium,
@@ -136,4 +157,24 @@ fun DashboardRoute(
             }
         }
     }
+}
+
+private fun greetingDisplayName(account: GoogleSignInAccount?): String? {
+    if (account == null) {
+        return null
+    }
+    val display = account.displayName?.trim().orEmpty()
+    if (display.isNotEmpty()) {
+        return display.split(Regex("\\s+")).firstOrNull { it.isNotBlank() }
+    }
+    val given = account.givenName?.trim().orEmpty()
+    if (given.isNotEmpty()) {
+        return given
+    }
+    val email = account.email?.trim().orEmpty()
+    if (email.contains("@")) {
+        val local = email.substringBefore("@").substringBefore(".")
+        return local.takeUnless { it.isBlank() }
+    }
+    return null
 }
