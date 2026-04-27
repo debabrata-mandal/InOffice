@@ -9,6 +9,9 @@
     <string name="dashboard_office_count">In-office days: %1$d / %2$d</string>
     <string name="dashboard_breakdown">Base mandate %1$d, minus %2$d leave and %3$d holiday days.</string>
     <string name="dashboard_today">Today</string>
+    <string name="dashboard_monthly_overview">Monthly overview</string>
+    <string name="dashboard_progress_label">Progress toward target</string>
+    <string name="dashboard_stat_base">Base mandate</string>
     <string name="marked_office">Marked as in-office</string>
     <string name="marked_leave">Marked as leave</string>
     <string name="marked_holiday">Marked as holiday</string>
