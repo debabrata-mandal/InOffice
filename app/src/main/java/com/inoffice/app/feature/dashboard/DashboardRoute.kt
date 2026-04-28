@@ -220,8 +220,8 @@ fun DashboardRoute(
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         DashboardStatPill(
-                            label = stringResource(R.string.dashboard_stat_base),
-                            value = state.baseMandate.toString(),
+                            label = stringResource(R.string.type_office),
+                            value = state.officeDays.toString(),
                             modifier = Modifier.weight(1f),
                         )
                         Spacer(modifier = Modifier.size(8.dp))

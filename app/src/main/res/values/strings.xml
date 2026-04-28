@@ -11,7 +11,6 @@
     <string name="dashboard_today">Today</string>
     <string name="dashboard_monthly_overview">Monthly overview</string>
     <string name="dashboard_progress_label">Progress toward target</string>
-    <string name="dashboard_stat_base">Base mandate</string>
     <string name="marked_office">Marked as in-office</string>
     <string name="marked_leave">Marked as leave</string>
     <string name="marked_holiday">Marked as holiday</string>
