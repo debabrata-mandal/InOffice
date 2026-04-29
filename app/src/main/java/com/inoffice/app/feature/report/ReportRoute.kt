@@ -85,7 +85,7 @@ fun ReportRoute(
                     text =
                         stringResource(
                             R.string.report_summary,
-                            state.summary.officeDays,
+                            state.summary.mandateProgressDays,
                             state.summary.adjustedTarget,
                             state.summary.baseMandate,
                         ),
@@ -121,6 +121,7 @@ private fun ReportRow(
                 DayType.OFFICE -> R.string.type_office
                 DayType.LEAVE -> R.string.type_leave
                 DayType.HOLIDAY -> R.string.type_holiday
+                DayType.WFH -> R.string.type_wfh
                 DayType.NONE -> R.string.marked_none
             },
         )

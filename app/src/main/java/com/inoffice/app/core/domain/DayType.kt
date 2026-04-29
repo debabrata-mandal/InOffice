@@ -8,5 +8,7 @@ enum class DayType {
     OFFICE,
     LEAVE,
     HOLIDAY,
+    /** Work from home (WFH). */
+    WFH,
     NONE,
 }
