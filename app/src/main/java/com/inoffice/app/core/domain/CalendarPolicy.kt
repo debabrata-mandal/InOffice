@@ -15,7 +15,8 @@ fun LocalDate.isWeekend(): Boolean =
     dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY
 
 /**
- * Mon–Fri days in [yearMonth] with a stored mark. Matches [MonthSummary.markedWeekdaySlots].
+ * Mon–Fri days in [yearMonth] marked office, leave, holiday, or WFH (weekends excluded; aligns with the app, which cannot mark Sat/Sun).
+ * Matches [MonthSummary.markedWeekdaySlots].
  */
 fun markedWeekdayCount(
     entries: List<DayEntry>,

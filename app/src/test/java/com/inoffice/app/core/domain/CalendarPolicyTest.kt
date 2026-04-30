@@ -28,7 +28,7 @@ class CalendarPolicyTest {
     }
 
     @Test
-    fun markedWeekdayCount_countsOnlyWeekdayMarksInMonth() {
+    fun markedWeekdayCount_countsOnlyWeekdayTypedMarksInMonth() {
         val ym = YearMonth.of(2024, 2)
         val entries =
             listOf(
@@ -42,7 +42,7 @@ class CalendarPolicyTest {
     }
 
     @Test
-    fun markedWeekdayCount_ignoresWeekendRows() {
+    fun markedWeekdayCount_excludesWeekendRowsEvenIfTyped() {
         val ym = YearMonth.of(2024, 2)
         val sat = LocalDate.of(2024, 2, 3)
         assertTrue(sat.isWeekend())

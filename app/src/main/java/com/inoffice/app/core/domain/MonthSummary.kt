@@ -9,7 +9,10 @@ data class MonthSummary(
     val leaveDays: Int,
     val holidayDays: Int,
     val wfhDays: Int,
-    /** Mon–Fri days in [yearMonth] with a stored mark (office, leave, holiday, or WFH). */
+    /**
+     * Mon–Fri days in [yearMonth] with office, leave, holiday, or WFH (matches in-app marking: weekends are not markable).
+     * Same as weekday-only office + leave + holiday + WFH counts.
+     */
     val markedWeekdaySlots: Int,
 ) {
     /**
@@ -30,6 +33,10 @@ fun monthSummary(
     baseMandate: Int,
 ): MonthSummary {
     val inMonth = entries.filter { YearMonth.from(it.localDate) == yearMonth }
+    val officeDays = inMonth.count { it.type == DayType.OFFICE }
+    val leaveDays = inMonth.count { it.type == DayType.LEAVE }
+    val holidayDays = inMonth.count { it.type == DayType.HOLIDAY }
+    val wfhDays = inMonth.count { it.type == DayType.WFH }
     val markedWeekdaySlots =
         inMonth.count { entry ->
             !entry.localDate.isWeekend() && entry.type != DayType.NONE
@@ -37,10 +44,10 @@ fun monthSummary(
     return MonthSummary(
         yearMonth = yearMonth,
         baseMandate = baseMandate,
-        officeDays = inMonth.count { it.type == DayType.OFFICE },
-        leaveDays = inMonth.count { it.type == DayType.LEAVE },
-        holidayDays = inMonth.count { it.type == DayType.HOLIDAY },
-        wfhDays = inMonth.count { it.type == DayType.WFH },
+        officeDays = officeDays,
+        leaveDays = leaveDays,
+        holidayDays = holidayDays,
+        wfhDays = wfhDays,
         markedWeekdaySlots = markedWeekdaySlots,
     )
 }
