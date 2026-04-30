@@ -28,7 +28,7 @@ data class DashboardUiState(
     val wfhDays: Int,
     val leaveAndHolidayDays: Int,
     val weekdaysInMonth: Int,
-    /** Mon–Fri days in the month that have any mark (office, leave, holiday, WFH). */
+    /** Mon–Fri marks this month (office + leave + holiday + WFH); weekends excluded, matching in-app marking rules. */
     val markedWeekdaysInMonth: Int,
     val todayType: DayType?,
     val yearMonth: YearMonth,
