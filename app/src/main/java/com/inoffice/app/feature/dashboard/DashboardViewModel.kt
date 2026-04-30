@@ -9,8 +9,10 @@ import com.inoffice.app.core.domain.isWeekend
 import com.inoffice.app.core.domain.monthSummary
 import com.inoffice.app.core.domain.weekdaysInMonth
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -41,51 +43,53 @@ class DashboardViewModel @Inject constructor(
     private val mandatePreferences: MandatePreferences,
 ) : ViewModel() {
 
-    private val currentMonth: YearMonth = YearMonth.now()
+    /**
+     * Bumped whenever the dashboard is shown so we re-bind [DayEntryRepository.observeEntries] to
+     * [YearMonth.now()]. A fixed month would miss marks after a calendar month change while the
+     * ViewModel stays alive (e.g. process not killed, navigation backstack).
+     */
+    private val dashboardVisibleGeneration = MutableStateFlow(0)
+
+    /**
+     * Call when the dashboard screen enters composition (or resumes) so entries and summaries use
+     * the correct calendar month and a fresh Room subscription.
+     */
+    fun onDashboardVisible() {
+        dashboardVisibleGeneration.value = dashboardVisibleGeneration.value + 1
+    }
 
     val uiState =
-        combine(
-            dayEntryRepository.observeEntries(currentMonth),
-            mandatePreferences.observeBaseMandate(),
-        ) { entries, base ->
-            val summary = monthSummary(currentMonth, entries, base)
-            val today = LocalDate.now()
-            val wdTotal = weekdaysInMonth(currentMonth)
-            DashboardUiState(
-                officeDays = summary.officeDays,
-                mandateProgressDays = summary.mandateProgressDays,
-                adjustedTarget = summary.adjustedTarget,
-                baseMandate = summary.baseMandate,
-                leaveDays = summary.leaveDays,
-                holidayDays = summary.holidayDays,
-                wfhDays = summary.wfhDays,
-                leaveAndHolidayDays = summary.leaveDays + summary.holidayDays,
-                weekdaysInMonth = wdTotal,
-                markedWeekdaysInMonth = summary.markedWeekdaySlots,
-                todayType = entries.firstOrNull { it.localDate == today }?.type,
-                yearMonth = currentMonth,
-                isTodayWeekend = today.isWeekend(),
+        dashboardVisibleGeneration
+            .flatMapLatest {
+                val yearMonth = YearMonth.now()
+                combine(
+                    dayEntryRepository.observeEntries(yearMonth),
+                    mandatePreferences.observeBaseMandate(),
+                ) { entries, base ->
+                    val summary = monthSummary(yearMonth, entries, base)
+                    val today = LocalDate.now()
+                    val wdTotal = weekdaysInMonth(yearMonth)
+                    DashboardUiState(
+                        officeDays = summary.officeDays,
+                        mandateProgressDays = summary.mandateProgressDays,
+                        adjustedTarget = summary.adjustedTarget,
+                        baseMandate = summary.baseMandate,
+                        leaveDays = summary.leaveDays,
+                        holidayDays = summary.holidayDays,
+                        wfhDays = summary.wfhDays,
+                        leaveAndHolidayDays = summary.leaveDays + summary.holidayDays,
+                        weekdaysInMonth = wdTotal,
+                        markedWeekdaysInMonth = summary.markedWeekdaySlots,
+                        todayType = entries.firstOrNull { it.localDate == today }?.type,
+                        yearMonth = yearMonth,
+                        isTodayWeekend = today.isWeekend(),
+                    )
+                }
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = emptyDashboardUiState(YearMonth.now()),
             )
-        }.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue =
-                DashboardUiState(
-                    officeDays = 0,
-                    mandateProgressDays = 0,
-                    adjustedTarget = 0,
-                    baseMandate = 12,
-                    leaveDays = 0,
-                    holidayDays = 0,
-                    wfhDays = 0,
-                    leaveAndHolidayDays = 0,
-                    weekdaysInMonth = weekdaysInMonth(currentMonth),
-                    markedWeekdaysInMonth = 0,
-                    todayType = null,
-                    yearMonth = currentMonth,
-                    isTodayWeekend = LocalDate.now().isWeekend(),
-                ),
-        )
 
     fun markToday(type: DayType) {
         val today = LocalDate.now()
@@ -95,5 +99,24 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             dayEntryRepository.setDayType(today, type)
         }
+    }
+
+    companion object {
+        private fun emptyDashboardUiState(yearMonth: YearMonth) =
+            DashboardUiState(
+                officeDays = 0,
+                mandateProgressDays = 0,
+                adjustedTarget = 0,
+                baseMandate = 12,
+                leaveDays = 0,
+                holidayDays = 0,
+                wfhDays = 0,
+                leaveAndHolidayDays = 0,
+                weekdaysInMonth = weekdaysInMonth(yearMonth),
+                markedWeekdaysInMonth = 0,
+                todayType = null,
+                yearMonth = yearMonth,
+                isTodayWeekend = LocalDate.now().isWeekend(),
+            )
     }
 }
