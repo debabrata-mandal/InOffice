@@ -21,11 +21,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.BeachAccess
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.EditCalendar
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Today
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -60,7 +63,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -253,30 +255,147 @@ fun DashboardRoute(
                                 .background(MaterialTheme.colorScheme.primary),
                     )
                     Spacer(modifier = Modifier.size(14.dp))
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(
-                            text = stringResource(R.string.dashboard_welcome_back),
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.primary,
-                            letterSpacing = 0.2.sp,
-                        )
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
                         Text(
                             text =
                                 if (greetingName.isNullOrBlank()) {
-                                    stringResource(R.string.dashboard_greeting_fallback)
+                                    stringResource(R.string.dashboard_welcome_back_plain)
                                 } else {
-                                    stringResource(R.string.dashboard_greeting, greetingName!!)
+                                    stringResource(R.string.dashboard_greeting_named, greetingName!!)
                                 },
-                            style = MaterialTheme.typography.titleLarge,
+                            style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
-                        Text(
-                            text = monthTitle,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CalendarMonth,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
+                                text = stringResource(R.string.dashboard_header_period, monthTitle),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Text(
+                                text =
+                                    stringResource(
+                                        R.string.dashboard_header_in_office_days,
+                                        state.mandateProgressDays,
+                                    ),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1f),
+                            )
+                            Text(
+                                text = "·",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.padding(horizontal = 6.dp),
+                            )
+                            Text(
+                                text =
+                                    stringResource(
+                                        R.string.dashboard_header_total_days,
+                                        state.markedWeekdaysInMonth,
+                                    ),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1f),
+                                textAlign = TextAlign.End,
+                            )
+                        }
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        val yesterdayDetail =
+                            stringResource(
+                                when {
+                                    state.isYesterdayWeekend -> R.string.dashboard_header_today_weekend
+                                    state.yesterdayType == DayType.OFFICE -> R.string.type_office
+                                    state.yesterdayType == DayType.LEAVE -> R.string.type_leave
+                                    state.yesterdayType == DayType.HOLIDAY -> R.string.type_holiday
+                                    state.yesterdayType == DayType.WFH -> R.string.type_wfh
+                                    else -> R.string.marked_none
+                                },
+                            )
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                        ) {
+                            Row(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.History,
+                                    contentDescription = stringResource(R.string.dashboard_yesterday),
+                                    modifier = Modifier.size(22.dp),
+                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                )
+                                Text(
+                                    text = stringResource(R.string.dashboard_header_yesterday, yesterdayDetail),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                )
+                            }
+                        }
+                        val todayDetail =
+                            stringResource(
+                                when {
+                                    state.isTodayWeekend -> R.string.dashboard_header_today_weekend
+                                    state.todayType == DayType.OFFICE -> R.string.type_office
+                                    state.todayType == DayType.LEAVE -> R.string.type_leave
+                                    state.todayType == DayType.HOLIDAY -> R.string.type_holiday
+                                    state.todayType == DayType.WFH -> R.string.type_wfh
+                                    else -> R.string.marked_none
+                                },
+                            )
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                        ) {
+                            Row(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Today,
+                                    contentDescription = stringResource(R.string.dashboard_today),
+                                    modifier = Modifier.size(22.dp),
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                )
+                                Text(
+                                    text = stringResource(R.string.dashboard_header_today, todayDetail),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -458,28 +577,6 @@ fun DashboardRoute(
                                 style = MaterialTheme.typography.bodyMedium,
                             )
                         }
-                    }
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    ) {
-                        Text(
-                            text =
-                                when (state.todayType) {
-                                    DayType.OFFICE -> stringResource(R.string.marked_office)
-                                    DayType.LEAVE -> stringResource(R.string.marked_leave)
-                                    DayType.HOLIDAY -> stringResource(R.string.marked_holiday)
-                                    DayType.WFH -> stringResource(R.string.marked_wfh)
-                                    DayType.NONE -> stringResource(R.string.marked_none)
-                                    null -> stringResource(R.string.marked_none)
-                                },
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium,
-                        )
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Button(

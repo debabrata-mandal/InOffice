@@ -33,8 +33,10 @@ data class DashboardUiState(
     /** Mon–Fri marks this month (office + leave + holiday + WFH); weekends excluded, matching in-app marking rules. */
     val markedWeekdaysInMonth: Int,
     val todayType: DayType?,
+    val yesterdayType: DayType?,
     val yearMonth: YearMonth,
     val isTodayWeekend: Boolean,
+    val isYesterdayWeekend: Boolean,
 )
 
 @HiltViewModel
@@ -64,10 +66,13 @@ class DashboardViewModel @Inject constructor(
                 val yearMonth = YearMonth.now()
                 combine(
                     dayEntryRepository.observeEntries(yearMonth),
+                    dayEntryRepository.observeEntries(yearMonth.minusMonths(1)),
                     mandatePreferences.observeBaseMandate(),
-                ) { entries, base ->
-                    val summary = monthSummary(yearMonth, entries, base)
+                ) { thisMonthEntries, prevMonthEntries, base ->
+                    val entries = thisMonthEntries + prevMonthEntries
+                    val summary = monthSummary(yearMonth, thisMonthEntries, base)
                     val today = LocalDate.now()
+                    val yesterday = today.minusDays(1)
                     val wdTotal = weekdaysInMonth(yearMonth)
                     DashboardUiState(
                         officeDays = summary.officeDays,
@@ -81,8 +86,10 @@ class DashboardViewModel @Inject constructor(
                         weekdaysInMonth = wdTotal,
                         markedWeekdaysInMonth = summary.markedWeekdaySlots,
                         todayType = entries.firstOrNull { it.localDate == today }?.type,
+                        yesterdayType = entries.firstOrNull { it.localDate == yesterday }?.type,
                         yearMonth = yearMonth,
                         isTodayWeekend = today.isWeekend(),
+                        isYesterdayWeekend = yesterday.isWeekend(),
                     )
                 }
             }.stateIn(
@@ -113,10 +120,12 @@ class DashboardViewModel @Inject constructor(
                 wfhDays = 0,
                 leaveAndHolidayDays = 0,
                 weekdaysInMonth = weekdaysInMonth(yearMonth),
-                markedWeekdaysInMonth = 0,
-                todayType = null,
-                yearMonth = yearMonth,
-                isTodayWeekend = LocalDate.now().isWeekend(),
-            )
+                        markedWeekdaysInMonth = 0,
+                        todayType = null,
+                        yesterdayType = null,
+                        yearMonth = yearMonth,
+                        isTodayWeekend = LocalDate.now().isWeekend(),
+                        isYesterdayWeekend = LocalDate.now().minusDays(1).isWeekend(),
+                    )
     }
 }
