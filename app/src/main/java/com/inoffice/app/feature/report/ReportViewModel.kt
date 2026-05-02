@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.inoffice.app.core.domain.DayEntry
 import com.inoffice.app.core.domain.DayEntryRepository
+import com.inoffice.app.core.domain.DayType
 import com.inoffice.app.core.domain.MandatePreferences
 import com.inoffice.app.core.domain.MonthSummary
+import com.inoffice.app.core.domain.isWeekend
 import com.inoffice.app.core.domain.monthSummary
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -14,12 +16,15 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import java.time.LocalDate
 import java.time.YearMonth
 import javax.inject.Inject
 
 data class ReportUiState(
     val yearMonth: YearMonth,
     val entries: List<DayEntry>,
+    val unmarkedWeekdays: List<LocalDate>,
     val summary: MonthSummary,
 )
 
@@ -40,9 +45,12 @@ class ReportViewModel @Inject constructor(
                     mandatePreferences.observeBaseMandate(),
                 ) { entries, base ->
                     val sorted = entries.sortedBy { it.localDate }
+                    val today = LocalDate.now()
+                    val unmarked = unmarkedWeekdaysInMonth(ym, sorted, today)
                     ReportUiState(
                         yearMonth = ym,
                         entries = sorted,
+                        unmarkedWeekdays = unmarked,
                         summary = monthSummary(ym, entries, base),
                     )
                 }
@@ -53,6 +61,7 @@ class ReportViewModel @Inject constructor(
                     ReportUiState(
                         yearMonth = selectedMonth.value,
                         entries = emptyList(),
+                        unmarkedWeekdays = emptyList(),
                         summary =
                             monthSummary(
                                 selectedMonth.value,
@@ -68,5 +77,36 @@ class ReportViewModel @Inject constructor(
 
     fun goToNextMonth() {
         selectedMonth.value = selectedMonth.value.plusMonths(1)
+    }
+
+    fun setDayTypeForDate(localDate: LocalDate, type: DayType) {
+        if (!isEditableWeekday(localDate)) return
+        viewModelScope.launch {
+            dayEntryRepository.setDayType(localDate, type)
+        }
+    }
+
+    fun isEditableWeekday(localDate: LocalDate): Boolean {
+        if (localDate.isWeekend()) return false
+        if (localDate.isAfter(LocalDate.now())) return false
+        return true
+    }
+
+    companion object {
+        internal fun unmarkedWeekdaysInMonth(
+            yearMonth: YearMonth,
+            entries: List<DayEntry>,
+            today: LocalDate,
+        ): List<LocalDate> {
+            val markedDates = entries.map { it.localDate }.toSet()
+            return (1..yearMonth.lengthOfMonth())
+                .map { yearMonth.atDay(it) }
+                .filter { date ->
+                    YearMonth.from(date) == yearMonth &&
+                        !date.isWeekend() &&
+                        !date.isAfter(today) &&
+                        date !in markedDates
+                }
+        }
     }
 }

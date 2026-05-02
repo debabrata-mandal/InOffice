@@ -35,4 +35,9 @@ class SyncStatusTracker @Inject constructor() {
                 errorMessage = message ?: "Sync failed. Please try again.",
             )
     }
+
+    /** Clears error UI after a cancelled sync (e.g. screen disposed); keeps last successful sync time. */
+    fun clearErrorToIdle() {
+        _status.value = _status.value.copy(state = SyncState.IDLE, errorMessage = null)
+    }
 }
