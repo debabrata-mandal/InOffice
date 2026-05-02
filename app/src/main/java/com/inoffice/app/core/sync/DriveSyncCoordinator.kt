@@ -7,14 +7,19 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.inoffice.app.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import com.inoffice.app.core.data.local.DayEntryDao
 import com.inoffice.app.core.data.local.DayEntryEntity
 import com.inoffice.app.core.data.repo.DataStoreMandatePreferences
+import java.io.IOException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -50,9 +55,7 @@ class DriveSyncCoordinator @Inject constructor(
                     localCache.write(merged)
                     syncStatusTracker.markSuccess()
                 }
-            }.onFailure { error ->
-                syncStatusTracker.markError(error.message)
-            }
+            }.onFailure { error -> handleSyncFailure(error) }
         }
     }
 
@@ -80,8 +83,10 @@ class DriveSyncCoordinator @Inject constructor(
             runCatching {
                 pushLocalSnapshotInternal()
             }.onFailure { error ->
-                syncStatusTracker.markError(error.message)
-                throw error
+                handleSyncFailure(error)
+                if (!isCancelledLike(error)) {
+                    throw error
+                }
             }
         }
     }
@@ -116,6 +121,48 @@ class DriveSyncCoordinator @Inject constructor(
         )
     }
 
+    private fun handleSyncFailure(error: Throwable) {
+        if (isCancelledLike(error)) {
+            syncStatusTracker.clearErrorToIdle()
+            return
+        }
+        syncStatusTracker.markError(mapToUserSyncMessage(error))
+    }
+
+    private fun isCancelledLike(error: Throwable): Boolean {
+        if (error is CancellationException) return true
+        val msg = error.message.orEmpty()
+        return msg.contains("left the composition", ignoreCase = true) ||
+            msg.contains("coroutine scope", ignoreCase = true)
+    }
+
+    private fun mapToUserSyncMessage(error: Throwable): String {
+        val combined =
+            buildString {
+                var t: Throwable? = error
+                while (t != null) {
+                    if (t.message != null) append(t.message).append(' ')
+                    t = t.cause
+                }
+            }.lowercase()
+        return when {
+            combined.contains("google account not available") ->
+                context.getString(R.string.sync_error_signed_out)
+            combined.contains("drive access needs user consent") ->
+                context.getString(R.string.sync_error_consent)
+            combined.contains("drive request failed") &&
+                (AUTH_HTTP_CODES.any { combined.contains(it) }) ->
+                context.getString(R.string.sync_error_auth)
+            combined.contains("drive request failed") ->
+                context.getString(R.string.sync_error_server)
+            error is SocketTimeoutException ||
+                error is UnknownHostException ||
+                error is IOException ->
+                context.getString(R.string.sync_error_network)
+            else -> context.getString(R.string.sync_error_generic)
+        }
+    }
+
     private suspend fun applyMergedSnapshot(snapshot: SyncSnapshot) {
         if (snapshot.dayEntries.isNotEmpty()) {
             dayEntryDao.upsertAll(
@@ -141,6 +188,8 @@ class DriveSyncCoordinator @Inject constructor(
     }
 
     companion object {
+        private val AUTH_HTTP_CODES = listOf(":401", " 401", ":403", " 403", " 401,", " 403,")
+
         private const val UNIQUE_SYNC_WORK_NAME = "drive_appdata_sync"
         private const val DEBOUNCE_DELAY_SECONDS = 2L
         private const val BACKOFF_DELAY_SECONDS = 10L

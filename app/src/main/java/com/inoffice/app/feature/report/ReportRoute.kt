@@ -1,5 +1,6 @@
 package com.inoffice.app.feature.report
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +14,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -22,7 +24,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -32,6 +36,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.inoffice.app.R
 import com.inoffice.app.core.domain.DayEntry
 import com.inoffice.app.core.domain.DayType
+import com.inoffice.app.ui.MarkDayTypeDialog
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -47,6 +53,21 @@ fun ReportRoute(
             state.yearMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault()))
         }
     val dateFormatter = remember { DateTimeFormatter.ofPattern("EEE, MMM d", Locale.getDefault()) }
+    var dialogTargetDate by remember { mutableStateOf<LocalDate?>(null) }
+    val pendingDate = dialogTargetDate
+    if (pendingDate != null) {
+        val formatted = pendingDate.format(dateFormatter)
+        MarkDayTypeDialog(
+            title = stringResource(R.string.report_edit_mark_title, formatted),
+            body = stringResource(R.string.report_edit_mark_body),
+            showClearOption = true,
+            onDismiss = { dialogTargetDate = null },
+            onSelectType = { type ->
+                viewModel.setDayTypeForDate(pendingDate, type)
+                dialogTargetDate = null
+            },
+        )
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -93,7 +114,8 @@ fun ReportRoute(
                     style = MaterialTheme.typography.bodyLarge,
                 )
             }
-            if (state.entries.isEmpty()) {
+            val hasAnyContent = state.entries.isNotEmpty() || state.unmarkedWeekdays.isNotEmpty()
+            if (!hasAnyContent) {
                 Text(
                     text = stringResource(R.string.report_empty),
                     style = MaterialTheme.typography.bodyMedium,
@@ -101,8 +123,39 @@ fun ReportRoute(
                 )
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(state.entries, key = { it.localDate }) { entry ->
-                        ReportRow(entry = entry, dateFormatter = dateFormatter)
+                    if (state.unmarkedWeekdays.isNotEmpty()) {
+                        item {
+                            Text(
+                                text = stringResource(R.string.report_unmarked_section),
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(top = 4.dp, bottom = 4.dp),
+                            )
+                        }
+                        items(state.unmarkedWeekdays, key = { "unmarked-$it" }) { date ->
+                            UnmarkedRow(
+                                date = date,
+                                dateFormatter = dateFormatter,
+                                onClick = { dialogTargetDate = date },
+                            )
+                        }
+                    }
+                    if (state.entries.isNotEmpty()) {
+                        item {
+                            Text(
+                                text = stringResource(R.string.report_marked_section),
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                            )
+                        }
+                        items(state.entries, key = { it.localDate }) { entry ->
+                            MarkedReportRow(
+                                entry = entry,
+                                dateFormatter = dateFormatter,
+                                onClick = { dialogTargetDate = entry.localDate },
+                            )
+                        }
                     }
                 }
             }
@@ -111,9 +164,38 @@ fun ReportRoute(
 }
 
 @Composable
-private fun ReportRow(
+private fun UnmarkedRow(
+    date: LocalDate,
+    dateFormatter: DateTimeFormatter,
+    onClick: () -> Unit,
+) {
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+            ),
+    ) {
+        Text(
+            text =
+                stringResource(
+                    R.string.report_unmarked_row,
+                    date.format(dateFormatter),
+                ),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            style = MaterialTheme.typography.bodyLarge,
+        )
+    }
+}
+
+@Composable
+private fun MarkedReportRow(
     entry: DayEntry,
     dateFormatter: DateTimeFormatter,
+    onClick: () -> Unit,
 ) {
     val typeLabel =
         stringResource(
@@ -125,8 +207,16 @@ private fun ReportRow(
                 DayType.NONE -> R.string.marked_none
             },
         )
-    Text(
-        text = stringResource(R.string.report_row, entry.localDate.format(dateFormatter), typeLabel),
-        style = MaterialTheme.typography.bodyLarge,
-    )
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick),
+    ) {
+        Text(
+            text = stringResource(R.string.report_row, entry.localDate.format(dateFormatter), typeLabel),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            style = MaterialTheme.typography.bodyLarge,
+        )
+    }
 }

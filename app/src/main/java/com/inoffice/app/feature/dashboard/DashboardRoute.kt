@@ -20,13 +20,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.BeachAccess
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.EditCalendar
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.EventBusy
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material.icons.filled.Work
@@ -34,7 +31,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,7 +40,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -58,7 +53,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -72,6 +66,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.inoffice.app.R
 import com.inoffice.app.core.domain.DayType
+import com.inoffice.app.ui.MarkDayTypeDialog
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.max
@@ -116,82 +111,16 @@ fun DashboardRoute(
     val markingEnabled = !state.isTodayWeekend
 
     if (showMarkTodayDialog) {
-        Dialog(onDismissRequest = { showMarkTodayDialog = false }) {
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.dashboard_mark_today_dialog_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Text(
-                        text = stringResource(R.string.dashboard_mark_today_dialog_body),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    FilledTonalButton(
-                        onClick = {
-                            viewModel.markToday(DayType.OFFICE)
-                            showMarkTodayDialog = false
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                    ) {
-                        Icon(Icons.Default.Work, contentDescription = null, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.size(10.dp))
-                        Text(stringResource(R.string.type_office))
-                    }
-                    FilledTonalButton(
-                        onClick = {
-                            viewModel.markToday(DayType.WFH)
-                            showMarkTodayDialog = false
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                    ) {
-                        Icon(Icons.Default.Home, contentDescription = null, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.size(10.dp))
-                        Text(stringResource(R.string.type_tile_whf))
-                    }
-                    FilledTonalButton(
-                        onClick = {
-                            viewModel.markToday(DayType.LEAVE)
-                            showMarkTodayDialog = false
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                    ) {
-                        Icon(Icons.Default.EventBusy, contentDescription = null, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.size(10.dp))
-                        Text(stringResource(R.string.type_leave))
-                    }
-                    FilledTonalButton(
-                        onClick = {
-                            viewModel.markToday(DayType.HOLIDAY)
-                            showMarkTodayDialog = false
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                    ) {
-                        Icon(Icons.Default.BeachAccess, contentDescription = null, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.size(10.dp))
-                        Text(stringResource(R.string.type_holiday))
-                    }
-                    TextButton(
-                        onClick = { showMarkTodayDialog = false },
-                        modifier = Modifier.align(Alignment.End),
-                    ) {
-                        Text(stringResource(R.string.dashboard_dialog_cancel))
-                    }
-                }
-            }
-        }
+        MarkDayTypeDialog(
+            title = stringResource(R.string.dashboard_mark_today_dialog_title),
+            body = stringResource(R.string.dashboard_mark_today_dialog_body),
+            showClearOption = false,
+            onDismiss = { showMarkTodayDialog = false },
+            onSelectType = { type ->
+                viewModel.markToday(type)
+                showMarkTodayDialog = false
+            },
+        )
     }
 
     Scaffold(

@@ -20,6 +20,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.Scope
 import com.google.android.gms.common.api.ApiException
+import com.inoffice.app.core.reminder.MarkReminderScheduler
 import com.inoffice.app.core.sync.DriveSyncCoordinator
 import com.inoffice.app.navigation.InOfficeNavHost
 import com.inoffice.app.feature.auth.AuthGateRoute
@@ -31,6 +32,9 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
     @Inject
     lateinit var driveSyncCoordinator: DriveSyncCoordinator
+
+    @Inject
+    lateinit var markReminderScheduler: MarkReminderScheduler
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -90,6 +94,7 @@ class MainActivity : ComponentActivity() {
                     LaunchedEffect(isSignedIn) {
                         if (isSignedIn) {
                             runCatching { driveSyncCoordinator.runStartupSyncIfNeeded() }
+                            markReminderScheduler.reschedule()
                         }
                     }
 
@@ -99,6 +104,7 @@ class MainActivity : ComponentActivity() {
                             navController = navController,
                             signedInEmail = signedInEmail,
                             onSignOut = {
+                                markReminderScheduler.cancel()
                                 signInClient
                                     .signOut()
                                     .addOnCompleteListener {
