@@ -24,6 +24,7 @@
     <string name="marked_wfh">Marked as work from home</string>
     <string name="marked_none">Not marked</string>
     <string name="action_mark_today">Mark today</string>
+    <string name="action_update_mark_today">Update today\'s mark</string>
     <string name="action_clear_today">Clear today</string>
     <string name="dashboard_mark_today_dialog_title">Mark today</string>
     <string name="dashboard_mark_today_dialog_body">Choose how today should be recorded.</string>

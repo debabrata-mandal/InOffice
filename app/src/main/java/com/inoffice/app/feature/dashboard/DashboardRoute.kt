@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -287,17 +288,7 @@ fun DashboardRoute(
                                 )
                             }
                         }
-                        val todayDetail =
-                            stringResource(
-                                when {
-                                    state.isTodayWeekend -> R.string.dashboard_header_today_weekend
-                                    state.todayType == DayType.OFFICE -> R.string.type_office
-                                    state.todayType == DayType.LEAVE -> R.string.type_leave
-                                    state.todayType == DayType.HOLIDAY -> R.string.type_holiday
-                                    state.todayType == DayType.WFH -> R.string.type_wfh
-                                    else -> R.string.marked_none
-                                },
-                            )
+                        val todayDetail = dashboardTodayDetailLabel(state)
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
@@ -507,12 +498,53 @@ fun DashboardRoute(
                             )
                         }
                     }
+                    if (!state.isTodayWeekend) {
+                        val todayStatusLabel = dashboardTodayDetailLabel(state)
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        ) {
+                            Row(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Today,
+                                    contentDescription = stringResource(R.string.dashboard_today),
+                                    modifier = Modifier.size(22.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Text(
+                                    text = stringResource(R.string.dashboard_header_today, todayStatusLabel),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                            }
+                        }
+                    }
+                    val todayIsMarked = markingEnabled && state.todayType != null
+                    val markTodayButtonColors =
+                        if (todayIsMarked) {
+                            ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            )
+                        } else {
+                            ButtonDefaults.buttonColors()
+                        }
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Button(
                             onClick = { showMarkTodayDialog = true },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(14.dp),
                             enabled = markingEnabled,
+                            colors = markTodayButtonColors,
                         ) {
                             Icon(
                                 Icons.Default.EditCalendar,
@@ -520,7 +552,15 @@ fun DashboardRoute(
                                 modifier = Modifier.size(20.dp),
                             )
                             Spacer(modifier = Modifier.size(10.dp))
-                            Text(stringResource(R.string.action_mark_today))
+                            Text(
+                                stringResource(
+                                    if (todayIsMarked) {
+                                        R.string.action_update_mark_today
+                                    } else {
+                                        R.string.action_mark_today
+                                    },
+                                ),
+                            )
                         }
                         OutlinedButton(
                             onClick = { viewModel.markToday(DayType.NONE) },
@@ -538,6 +578,19 @@ fun DashboardRoute(
         }
     }
 }
+
+@Composable
+private fun dashboardTodayDetailLabel(state: DashboardUiState): String =
+    stringResource(
+        when {
+            state.isTodayWeekend -> R.string.dashboard_header_today_weekend
+            state.todayType == DayType.OFFICE -> R.string.type_office
+            state.todayType == DayType.LEAVE -> R.string.type_leave
+            state.todayType == DayType.HOLIDAY -> R.string.type_holiday
+            state.todayType == DayType.WFH -> R.string.type_wfh
+            else -> R.string.marked_none
+        },
+    )
 
 @Composable
 private fun DashboardStatPill(
