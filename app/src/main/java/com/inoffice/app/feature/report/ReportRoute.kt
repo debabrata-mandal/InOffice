@@ -197,6 +197,24 @@ private fun MarkedReportRow(
     dateFormatter: DateTimeFormatter,
     onClick: () -> Unit,
 ) {
+    val rowColors =
+        when (entry.type) {
+            DayType.OFFICE ->
+                MaterialTheme.colorScheme.primaryContainer to
+                    MaterialTheme.colorScheme.onPrimaryContainer
+            DayType.LEAVE ->
+                MaterialTheme.colorScheme.tertiaryContainer to
+                    MaterialTheme.colorScheme.onTertiaryContainer
+            DayType.HOLIDAY ->
+                MaterialTheme.colorScheme.errorContainer to
+                    MaterialTheme.colorScheme.onErrorContainer
+            DayType.WFH ->
+                MaterialTheme.colorScheme.secondaryContainer to
+                    MaterialTheme.colorScheme.onSecondaryContainer
+            DayType.NONE ->
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f) to
+                    MaterialTheme.colorScheme.onSurfaceVariant
+        }
     val typeLabel =
         stringResource(
             when (entry.type) {
@@ -212,11 +230,16 @@ private fun MarkedReportRow(
             Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = rowColors.first,
+            ),
     ) {
         Text(
             text = stringResource(R.string.report_row, entry.localDate.format(dateFormatter), typeLabel),
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             style = MaterialTheme.typography.bodyLarge,
+            color = rowColors.second,
         )
     }
 }
